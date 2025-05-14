@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/flankerhqd-jebmcp-badge.png)](https://mseep.ai/app/flankerhqd-jebmcp)
+
 A quick-and-dirty MCP server&Plugin for JEB Pro.
 Tested on Cline.
 
