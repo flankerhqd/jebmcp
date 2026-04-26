@@ -1,0 +1,246 @@
+# JEB MCP 敏感特征审计配置 (API 签名 & 字符串片段)
+# 说明: 
+# 1. 配置规则: 每一行均为一个监控特征（Feature Tag）。
+# 2. 匹配逻辑: 扫描器 `find_sensitive_strings` 将在 DEX 字符串池及符号表中执行全量检索。
+# 3. 支持类型: API 签名 (Landroid...;->...)、类路径片段 (Lcom/evil/...)、协议片段 (hap://) 或 纯文本 (google_aid)。
+# 4. 辅助规则: 使用 '#' 开头进行分类注释。
+
+# --- [01] 核心设备指纹与隐私 (Core Fingerprints & Privacy) ---
+Landroid/telephony/TelephonyManager;->getDeviceId
+Landroid/telephony/TelephonyManager;->getImei
+Landroid/telephony/TelephonyManager;->getMeid
+Landroid/telephony/TelephonyManager;->getSubscriberId
+Landroid/telephony/TelephonyManager;->getSimSerialNumber
+Landroid/telephony/TelephonyManager;->getLine1Number
+Landroid/provider/Settings$Secure;->getString
+Landroid/provider/Settings$System;->getString
+Lcom/google/android/gms/ads/identifier/AdvertisingIdClient$Info;->getId
+google_aid
+android_id
+device_id
+
+# --- [02] 网络环境分析与 BSSID (Network Context) ---
+Landroid/net/wifi/WifiInfo;->getMacAddress
+Landroid/net/wifi/WifiInfo;->getBSSID
+Landroid/net/wifi/WifiInfo;->getSSID
+Landroid/net/wifi/WifiManager;->getConnectionInfo
+Landroid/net/wifi/WifiManager;->getScanResults
+Ljava/net/NetworkInterface;->getHardwareAddress
+Landroid/telephony/TelephonyManager;->getAllCellInfo
+
+# --- [03] 地理位置追踪 (Location Tracking) ---
+Landroid/location/LocationManager;->getLastKnownLocation
+Landroid/location/LocationManager;->requestLocationUpdates
+Landroid/location/Location;->getLatitude
+Landroid/location/Location;->getLongitude
+
+# --- [04] 动态加载与反射逃逸 (Dynamic Code & Reflection) ---
+Ldalvik/system/DexClassLoader;-><init>
+Ldalvik/system/PathClassLoader;-><init>
+Ldalvik/system/InMemoryDexClassLoader;-><init>
+Ljava/lang/reflect/Method;->invoke
+Ljava/lang/System;->load
+Ljava/lang/System;->loadLibrary
+Ljava/lang/Runtime;->loadLibrary
+
+# --- [05] 系统命令执行风险 (System Execution) ---
+Ljava/lang/Runtime;->exec
+Ljava/lang/ProcessBuilder;->start
+
+# --- [06] 应用列表、存储与统计 (Usage & Inventory) ---
+Landroid/content/pm/PackageManager;->getInstalledPackages
+Landroid/content/pm/PackageManager;->getInstalledApplications
+Landroid/content/ContentResolver;->query
+Landroid/app/ActivityManager;->getRunningAppProcesses
+Landroid/app/usage/UsageStatsManager;->queryUsageStats
+
+# --- [07] 悬浮窗、屏幕内容与传感器 (Stealth Surveillance) ---
+Landroid/view/WindowManager;->addView
+Landroid/view/Display;->getMetrics
+Landroid/hardware/SensorManager;->getDefaultSensor
+Landroid/media/MediaRecorder;->start
+
+# --- [08] 加密算法审计 (Cryptography Auditing) ---
+Ljavax/crypto/Cipher;->getInstance
+Ljavax/crypto/spec/SecretKeySpec;-><init>
+Ljava/security/MessageDigest;->getInstance
+Ljava/security/SecureRandom;-><init>
+Ljavax/crypto/spec/IvParameterSpec;-><init>
+Ljavax/net/ssl/TrustManager;
+Ljavax/net/ssl/HostnameVerifier;->verify
+
+# --- [09] WebView 安全缺陷与接口 (WebView Vulnerability) ---
+Landroid/webkit/WebView;->addJavascriptInterface
+Landroid/webkit/WebSettings;->setAllowFileAccess
+Landroid/webkit/WebSettings;->setJavaScriptEnabled
+Landroid/webkit/WebView;->evaluateJavascript
+Landroid/webkit/WebView;->loadDataWithBaseURL
+Landroid/webkit/WebChromeClient;->onJsAlert
+Landroid/webkit/WebChromeClient;->onJsConfirm
+Landroid/webkit/WebChromeClient;->onJsPrompt
+Landroid/webkit/WebViewClient;->onReceivedSslError
+Landroid/webkit/SslErrorHandler;->proceed
+
+# --- [10] 广告欺诈与自动化点击 (Ad Fraud & Clickbot) ---
+Landroid/view/MotionEvent;->obtain
+Landroid/view/View;->dispatchTouchEvent
+Landroid/accessibilityservice/AccessibilityService;->dispatchGesture
+Landroid/app/Instrumentation;->sendPointerSync
+Landroid/view/accessibility/AccessibilityNodeInfo;->performAction
+Landroid/view/WindowManager$LayoutParams;->FLAG_NOT_TOUCHABLE
+Landroid/app/Instrumentation;->sendKeyDownUpSync
+Landroid/hardware/input/InputManager;->injectInputEvent
+
+# --- [11] 监控、通话与短信窃取 (Eavesdropping & SMS) ---
+Landroid/media/AudioRecord;->startRecording
+Landroid/hardware/Camera;->takePicture
+Landroid/hardware/camera2/CameraDevice;->createCaptureSession
+Landroid/telephony/SmsManager;->sendTextMessage
+Landroid/telephony/SmsManager;->getAllMessagesFromIcc
+Landroid/telephony/TelephonyManager;->getCallState
+Landroid/telephony/PhoneStateListener;->onCallStateChanged
+Landroid/provider/CallLog$Calls;->CONTENT_URI
+Landroid/content/ClipData$Item;->getText
+Landroid/content/ClipboardManager;->getPrimaryClip
+Landroid/content/ClipboardManager;->addPrimaryClipChangedListener
+Landroid/provider/ContactsContract$Contacts;->CONTENT_URI
+Landroid/provider/CalendarContract$Events;->CONTENT_URI
+
+# --- [21] 账户与凭证窃取 (Account & Credential Theft) ---
+Landroid/accounts/AccountManager;->getAccounts
+Landroid/accounts/AccountManager;->getAccountsByType
+Landroid/accounts/AccountManager;->getPassword
+Landroid/accounts/AccountManager;->getUserData
+Landroid/accounts/AccountManager;->getAuthToken
+
+# --- [22] 恶意下载与静默安装 (Droppers & Silent Installers) ---
+Landroid/app/DownloadManager;->enqueue
+Landroid/content/pm/PackageInstaller$Session;->commit
+Landroid/content/pm/PackageInstaller;->createSession
+application/vnd.android.package-archive
+
+# --- [12] 恶意保活与影子运行 (Survival & Persistence) ---
+Landroid/app/Service;->startForeground
+Landroid/app/NotificationManager;->notify
+Landroid/app/job/JobScheduler;->schedule
+Landroid/app/job/JobInfo$Builder;->setPeriodic
+Landroid/app/AlarmManager;->setExactAndAllowWhileIdle
+Landroidx/work/WorkManager;->enqueue
+Landroid/content/ContentResolver;->addPeriodicSync
+Landroid/media/MediaPlayer;->setLooping
+Landroid/media/MediaPlayer;->start
+Landroid/media/AudioTrack;->play
+Landroid/app/Notification$Builder;->setOngoing
+Landroid/app/NotificationChannel;->setImportance
+Landroid/os/PowerManager;->isIgnoringBatteryOptimizations
+Landroid/os/PowerManager;->isDeviceIdleMode
+# 常见的保活服务类名关键字 (String Mode)
+KeepAliveService
+DaemonService
+DaemonReceiver
+
+# --- [13] 桌面卡片、快应用与流氓推广 (Shortcut & Ad-Injection) ---
+Landroid/content/pm/LauncherApps;->pinShortcut
+Landroid/content/pm/ShortcutManager;->requestPinShortcut
+Landroid/content/pm/ShortcutManager;->addDynamicShortcuts
+Landroid/content/pm/PackageManager;->setComponentEnabledSetting
+# 注意: 以下为 Deeplink/URI 模式关键字，扫描器需支持全字匹配
+hap://app/
+quickapp://
+intent://#Intent;scheme=hap;
+
+# --- [14] 恶意镜像、插件框架与 Hook (Virtualization & Hooks) ---
+Lcom/lody/virtual/client/core/VirtualCore;
+Lcom/qihoo360/loader/utils/LibraryLoaderHelper;
+Lde/robv/android/xposed/XposedBridge;
+Lde/robv/android/xposed/XposedHelpers;
+Lio/virtualapp/
+Lcom/stub/StubApp;
+Lcom/tencent/tinker/loader/
+Lme/weishu/epic/
+Lcom/blankj/utilcode/util/ReflectUtils;->invoke
+Ltop/canyie/pine/Pine;
+Lcom/swift/sandhook/
+Lcom/taobao/android/dexposed/
+
+# --- [15] 环境逃逸、模拟器与 ROOT 检测 (Anti-Analysis) ---
+Landroid/os/Debug;->isDebuggerConnected
+Landroid/content/pm/PackageManager;->isSafeMode
+Landroid/os/Build;->MODEL
+Landroid/os/Build;->FINGERPRINT
+Landroid/os/Build;->PRODUCT
+Lcom/google/android/gms/safetynet/SafetyNetClient;->attest
+Lcom/google/android/play/core/integrity/IntegrityManager;->requestIntegrityToken
+# 敏感路径与高级对抗字符串
+/system/xbin/su
+/system/bin/su
+/sbin/su
+/data/local/tmp
+/proc/self/maps
+nox
+genymotion
+ro.build.version.security_patch
+ro.debuggable
+ro.secure
+bluestacks
+frida
+magisk
+xposed
+substrate
+
+# --- [16] 远程控制与隐蔽投屏 (Remote Control) ---
+Landroid/media/projection/MediaProjectionManager;->getMediaProjection
+Landroid/media/projection/MediaProjection;->createVirtualDisplay
+Landroid/media/ImageReader;->acquireLatestImage
+Landroid/media/Image;->getPlanes
+Landroid/view/SurfaceView;-><init
+Landroid/view/TextureView;-><init
+Landroid/hardware/display/VirtualDisplay;-><init
+
+# --- [17] Accessibility 滥用 ---
+Landroid/view/accessibility/AccessibilityService;->onAccessibilityEvent
+Landroid/view/accessibility/AccessibilityServiceInfo;->feedbackType
+Landroid/view/accessibility/AccessibilityNodeInfo;->refresh
+Landroid/view/accessibility/AccessibilityNodeInfo;->getText
+Landroid/view/accessibility/AccessibilityNodeInfo;->isPassword  
+Landroid/view/accessibility/AccessibilityNodeInfo;->getPackageName
+Landroid/view/accessibility/AccessibilityRecord;->getSource
+Landroid/accessibilityservice/AccessibilityService;->getRootInActiveWindow
+Landroid/accessibilityservice/GestureDescription$Builder;-><init
+Landroid/accessibilityservice/GestureDescription$Builder;->addStroke
+Landroid/view/accessibility/AccessibilityNodeInfo;->findAccessibilityNodeInfosByText
+Landroid/view/accessibility/AccessibilityNodeInfo;->findAccessibilityNodeInfosByViewId
+Landroid/view/accessibility/AccessibilityNodeInfo;->performGlobalAction
+
+# --- [19] 云端 C2 / 数据外传 ---
+Lcom/google/firebase/database/FirebaseDatabase;->getInstance
+Lcom/google/firebase/database/DatabaseReference;->setValue
+Lcom/google/firebase/storage/StorageReference;->putBytes
+Lcom/google/firebase/storage/StorageReference;->putFile
+Lcom/google/firebase/auth/FirebaseAuth;->getInstance
+
+# Telegram Bot API 相关（字符串模式）
+https://api.telegram.org/bot
+https://api.telegram.org/file/bot
+telegram_bot_token
+bot[0-9]+:AA[0-9a-zA-Z_-]+
+# --- [20] NFC Relay / 近场攻击 ---
+Landroid/nfc/NfcAdapter;->getDefaultAdapter
+Landroid/nfc/tech/IsoDep;->connect
+Landroid/nfc/tech/NfcA;->transceive
+Landroid/nfc/NdefMessage;-><init
+
+# --- 字符串模式补充 ---
+AccessibilityService
+MediaProjection
+VirtualDisplay
+Firebase
+apps-script.google.com
+googleapis.com/drive
+api.telegram.org
+NFC
+relay
+vnc
+socks5
+overlay
+keylogger

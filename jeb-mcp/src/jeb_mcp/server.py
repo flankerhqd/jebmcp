@@ -7,7 +7,7 @@ import sys
 from fastmcp import FastMCP
 
 # The log_level is necessary for Cline to work: https://github.com/jlowin/fastmcp/issues/81
-mcp = FastMCP("github.com/flankerhqd/jeb-pro-mcp", log_level="ERROR")
+mcp = FastMCP("github.com/flankerhqd/jeb-pro-mcp")
 
 jsonrpc_request_id = 1
 

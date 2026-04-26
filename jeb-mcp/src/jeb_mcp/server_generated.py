@@ -5,360 +5,160 @@ from typing import Annotated, TypeVar
 T = TypeVar("T")
 
 
-@mcp.tool()
-def ping() -> str:
-    """Do a simple ping to check server is alive and running"""
-    return make_jsonrpc_request("ping")
-
 
 @mcp.tool()
-def get_manifest(filepath: Annotated[str, "full apk file path."]) -> str:
-    """Get the manifest of the given APK file in path, the passed in filepath needs to be a fully-qualified absolute path"""
+def get_manifest(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+) -> str:
+    """
+    Get the AndroidManifest.xml of the given APK as plain text.
+    Use this to identify package name, activities, services, and permissions.
+    """
     return make_jsonrpc_request("get_manifest", filepath)
 
 
 @mcp.tool()
-def get_all_exported_activities(
-    filepath: Annotated[str, "full apk file path."],
+def get_exported_components(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    component_type: Annotated[
+        str, "Type of component: 'activity', 'service', 'receiver', or 'provider'."
+    ],
 ) -> list[str]:
     """
-    Get all exported activity names from the APK manifest.
-
-    This includes activities with:
-    - android:exported="true"
-    - or no exported attribute but with at least one <intent-filter>
-
-    The passed in filepath needs to be a fully-qualified absolute path.
+    Get all exported components of the specified type from the APK manifest.
+    A component is considered "exported" if it sets android:exported="true"
+    or has an <intent-filter> without explicitly setting exported="false".
     """
-    return make_jsonrpc_request("get_all_exported_activities", filepath)
+    return make_jsonrpc_request("get_exported_components", filepath, component_type)
 
 
 @mcp.tool()
-def get_exported_services(
-    filepath: Annotated[str, "full apk file path."],
-) -> list[str]:
-    """
-    Get all exported service names from the APK manifest.
-
-    This includes services with:
-    - android:exported="true"
-    - or no exported attribute but with at least one <intent-filter>
-
-    The passed in filepath needs to be a fully-qualified absolute path.
-    """
-    return make_jsonrpc_request("get_exported_services", filepath)
-
-
-@mcp.tool()
-def get_method_decompiled_code(
-    filepath: Annotated[str, "full apk file path."],
-    method_signature: Annotated[
+def get_decompiled_code(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    item_signature: Annotated[
         str,
-        "the method_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V",
+        "The fully-qualified signature to decompile, e.g., 'Lcom/abc/Foo;' or 'Lcom/abc/Foo;->bar(I)V'",
     ],
 ) -> str:
-    """Get the decompiled code of the given method in the APK file, the passed in method_signature needs to be a fully-qualified signature
-    Dex units use Java-style internal addresses to identify items:
-
-    - package: Lcom/abc/
-    - type: Lcom/abc/Foo;
-    - method: Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V
-    - field: Lcom/abc/Foo;->flag1:Z
-
-    @param filepath: the path to the APK file
-    @param method_signature: the fully-qualified method signature to decompile, e.g. Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V
-    the passed in filepath needs to be a fully-qualified absolute path
     """
-    return make_jsonrpc_request(
-        "get_method_decompiled_code", filepath, method_signature
-    )
+    Get the decompiled Java code (pseudo-code) of the given class or method.
+    If providing a class signature, the entire class is decompiled.
+    """
+    return make_jsonrpc_request("get_decompiled_code", filepath, item_signature)
 
 
 @mcp.tool()
-def get_method_smali_code(
-    filepath: Annotated[str, "full apk file path."],
-    method_signature: Annotated[
+def get_smali_code(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    item_signature: Annotated[
         str,
-        "the method_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V",
+        "The fully-qualified signature, e.g., 'Lcom/abc/Foo;' or 'Lcom/abc/Foo;->bar(I)V'",
     ],
 ) -> str:
-    """Get the smali code of the given method in the APK file, the passed in method_signature needs to be a fully-qualified signature
-    Dex units use Java-style internal addresses to identify items:
-
-    - package: Lcom/abc/
-    - type: Lcom/abc/Foo;
-    - method: Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V
-    - field: Lcom/abc/Foo;->flag1:Z
-
-    @param filepath: the path to the APK file
-    @param method_signature: the fully-qualified method signature to decompile, e.g. Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V
-    the passed in filepath needs to be a fully-qualified absolute path
     """
-    return make_jsonrpc_request(
-        "get_method_smali_code", filepath, method_signature
-    )
-
-
-@mcp.tool()
-def get_class_decompiled_code(
-    filepath: Annotated[str, "full apk file path."],
-    class_signature: Annotated[
-        str, "fully-qualified signature of the class, e.g. Lcom/abc/Foo;"
-    ],
-) -> str:
-    """Get the decompiled code of the given class in the APK file, the passed in class_signature needs to be a fully-qualified signature
-    Dex units use Java-style internal addresses to identify items:
-
-    - package: Lcom/abc/
-    - type: Lcom/abc/Foo;
-    - method: Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V
-    - field: Lcom/abc/Foo;->flag1:Z
-
-    @param: filepath: The path to the APK file
-    @param: class_signature: The fully-qualified signature of the class to decompile, e.g. Lcom/abc/Foo;
-    the passed in filepath needs to be a fully-qualified absolute path
+    Get the smali (assembly-like) code of the given class or method.
+    Useful for verifying low-level logic or specific instruction offsets.
     """
-    return make_jsonrpc_request(
-        "get_class_decompiled_code", filepath, class_signature
-    )
-
-
-@mcp.tool()
-def get_method_callers(
-    filepath: Annotated[str, "full apk file path."],
-    method_signature: Annotated[
-        str,
-        "the method_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V",
-    ],
-) -> list[dict]:
-    """
-    Get the callers of the given method in the APK file, the passed in method_signature needs to be a fully-qualified signature
-    the passed in filepath needs to be a fully-qualified absolute path
-    """
-    return make_jsonrpc_request(
-        "get_method_callers", filepath, method_signature
-    )
-
-
-@mcp.tool()
-def get_field_callers(
-    filepath: Annotated[str, "full apk file path."],
-    field_signature: Annotated[
-        str,
-        "the field_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;->a",
-    ],
-) -> list[dict]:
-    """
-    Get the callers of the given field in the APK file, the passed in field_signature needs to be a fully-qualified signature
-    the passed in filepath needs to be a fully-qualified absolute path
-    """
-    return make_jsonrpc_request("get_field_callers", filepath, field_signature)
+    return make_jsonrpc_request("get_smali_code", filepath, item_signature)
 
 
 @mcp.tool()
 def get_method_overrides(
-    filepath: Annotated[str, "full apk file path."],
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
     method_signature: Annotated[
         str,
-        "the method_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V",
+        "Full method signature, e.g., 'Lcom/abc/Foo;->onCreate(Landroid/os/Bundle;)V'",
     ],
 ) -> list[str]:
     """
-    Get the overrides of the given method in the APK file, the passed in method_signature needs to be a fully-qualified signature
-    the passed in filepath needs to be a fully-qualified absolute path
+    Get the overrides of the given method (up the inheritance chain).
+    Helps understand the relationships between methods in parent classes/interfaces.
     """
+    return make_jsonrpc_request("get_method_overrides", filepath, method_signature)
+
+
+@mcp.tool()
+def get_class_hierarchy(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    class_signature: Annotated[
+        str, "Fully-qualified signature of the class, e.g., 'Lcom/abc/Foo;'"
+    ],
+    relation_type: Annotated[str, "Type of relation: 'superclass' or 'interface'."],
+) -> list[str] | str:
+    """Get the superclass or interfaces of the given class."""
     return make_jsonrpc_request(
-        "get_method_overrides", filepath, method_signature
+        "get_class_hierarchy", filepath, class_signature, relation_type
     )
 
 
 @mcp.tool()
-def get_superclass(
-    filepath: Annotated[str, "full apk file path."],
+def get_class_members(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
     class_signature: Annotated[
-        str, "fully-qualified signature of the class, e.g. Lcom/abc/Foo;"
+        str, "Fully-qualified signature of the class, e.g., 'Lcom/abc/Foo;'"
     ],
-) -> str:
-    """
-    Get the superclass of the given class in the APK file, the passed in class_signature needs to be a fully-qualified signature
-    the passed in filepath needs to be a fully-qualified absolute path
-    """
-    return make_jsonrpc_request("get_superclass", filepath, class_signature)
-
-
-@mcp.tool()
-def get_interfaces(
-    filepath: Annotated[str, "full apk file path."],
-    class_signature: Annotated[
-        str, "fully-qualified signature of the class, e.g. Lcom/abc/Foo;"
-    ],
+    member_type: Annotated[str, "Type of member: 'method' or 'field'."],
 ) -> list[str]:
-    """
-    Get the interfaces of the given class in the APK file, the passed in class_signature needs to be a fully-qualified signature
-    the passed in filepath needs to be a fully-qualified absolute path
-    """
-    return make_jsonrpc_request("get_interfaces", filepath, class_signature)
+    """Get a list of all method or field signatures defined in the given class."""
+    return make_jsonrpc_request(
+        "get_class_members", filepath, class_signature, member_type
+    )
 
 
 @mcp.tool()
-def get_class_methods(
-    filepath: Annotated[str, "full apk file path."],
-    class_signature: Annotated[
-        str, "fully-qualified signature of the class, e.g. Lcom/abc/Foo;"
+def rename_code_item(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    item_signature: Annotated[
+        str, "Full signature of the class, method, or field to rename."
     ],
-) -> list[str]:
-    """
-    Get the methods of the given class in the APK file, the passed in class_signature needs to be a fully-qualified signature
-    the passed in filepath needs to be a fully-qualified absolute path
-    """
-    return make_jsonrpc_request("get_class_methods", filepath, class_signature)
-
-
-@mcp.tool()
-def get_class_fields(
-    filepath: Annotated[str, "full apk file path."],
-    class_signature: Annotated[
-        str, "fully-qualified signature of the class, e.g. Lcom/abc/Foo;"
-    ],
-) -> list[str]:
-    """
-    Get the fields of the given class in the APK file, the passed in class_signature needs to be a fully-qualified signature
-    the passed in filepath needs to be a fully-qualified absolute path
-    """
-    return make_jsonrpc_request("get_class_fields", filepath, class_signature)
-
-
-@mcp.tool()
-def rename_class_name(
-    filepath: Annotated[str, "full apk file path"],
-    class_signature: Annotated[
-        str, "fully-qualified signature of the class, e.g. Lcom/abc/Foo;"
-    ],
-    new_class_name: Annotated[
-        str,
-        "the new name for java class name without package and type, e.g. 'MyNewClass'",
-    ],
+    new_name: Annotated[str, "The new descriptive name for the item."],
 ):
-    """rename the given class in the APK file
-
-    Args:
-        filepath (str): full apk file path.
-        class_signature (str): fully-qualified signature of the class, e.g. Lcom/abc/Foo;
-        new_class_name (str): the new name for java class name without package and type, e.g. "MyNewClass"
-
-    Returns:
-        None
     """
-    return make_jsonrpc_request(
-        "rename_class_name", filepath, class_signature, new_class_name
-    )
-
-
-@mcp.tool()
-def rename_method_name(
-    filepath: Annotated[str, "full apk file path"],
-    class_signature: Annotated[
-        str, "fully-qualified signature of the class, e.g. Lcom/abc/Foo;"
-    ],
-    method_signature: Annotated[
-        str,
-        "the method_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V",
-    ],
-    new_method_name: Annotated[
-        str,
-        "the new name for java method name without parameters, e.g. 'myNewMethod'",
-    ],
-):
-    """rename the given class method in the APK file
-
-    Args:
-        filepath (str): full apk file path.
-        class_signature (str): fully-qualified signature of the class, e.g. Lcom/abc/Foo;
-        method_signature (str): the method_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;->bar(I[JLjava/Lang/String;)V
-        new_method_name (str): the new name for java method name without parameters, e.g. "myNewMethod"
-
-    Returns:
-        None
+    Rename a class, method, or field globally in the project.
+    Changes both the internal DEX model and the decompiled view.
     """
-    return make_jsonrpc_request(
-        "rename_method_name",
-        filepath,
-        class_signature,
-        method_signature,
-        new_method_name,
-    )
-
-
-@mcp.tool()
-def rename_class_field(
-    filepath: Annotated[str, "full apk file path"],
-    class_signature: Annotated[
-        str, "fully-qualified signature of the class, e.g. Lcom/abc/Foo;"
-    ],
-    field_signature: Annotated[
-        str,
-        "the field_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;->flag1:Z",
-    ],
-    new_field_name: Annotated[
-        str, "the new name for java field name without type, e.g. 'myNewField'"
-    ],
-):
-    """rename the given class field in the APK file
-
-    Args:
-        filepath (str): _description_
-        class_signature (str): class_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;
-        field_signature (str): the field_signature needs to be a fully-qualified signature e.g. Lcom/abc/Foo;->flag1:Z
-        new_field_name (str): the new name for java field name without type, e.g. "myNewField"
-
-    Returns:
-        None
-    """
-    return make_jsonrpc_request(
-        "rename_class_field",
-        filepath,
-        class_signature,
-        field_signature,
-        new_field_name,
-    )
+    return make_jsonrpc_request("rename_code_item", filepath, item_signature, new_name)
 
 
 @mcp.tool()
 def check_java_identifier(
-    filepath: Annotated[str, "full apk file path"],
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
     identifier: Annotated[
-        str,
-        "the passed in identifier needs to be a fully-qualified name (like `com.abc.def.Foo`) or a signature;",
+        str, "Dot-notation name (com.abc.Foo) or signature (Lcom/abc/Foo;)"
     ],
 ) -> list[dict]:
     """
-    Check an identifier in the APK file and recognize if this is a class, type, method or field.
-    the passed in identifier needs to be a fully-qualified name (like `com.abc.def.Foo`) or a signature;
-    the passed in filepath needs to be a fully-qualified absolute path;
-    the return value will be a list to tell you the possible type of the passed identifier.
+    Check an identifier and recognize if it is a class, method, or field.
+    Returns details including signature and type. Use this BEFORE other tools to verify inputs.
     """
     return make_jsonrpc_request("check_java_identifier", filepath, identifier)
 
 
 @mcp.tool()
 def list_cross_references(
-    filepath: Annotated[str, "full apk file path."],
-    address: Annotated[str, "The address or signature to query XREFs for."],
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    address: Annotated[
+        str, "The address or signature (Lcom/abc/Foo;->bar()V) to query XREFs for."
+    ],
 ) -> list[dict]:
-    """Retrieve cross-references to an address in a code unit, that is, the users or callers of the item at the provided address."""
+    """Retrieve callers (XREFs) of the item at the provided address or signature."""
     return make_jsonrpc_request("list_cross_references", filepath, address)
 
 
 @mcp.tool()
 def rename_pseudo_code_variables(
-    filepath: Annotated[str, "full apk file path"],
-    method_signature: Annotated[str, "fully-qualified method signature"],
-    old_var_name: Annotated[str, "the current name of the variable"],
-    new_var_name: Annotated[str, "the new name for the variable"],
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    method_signature: Annotated[
+        str, "Fully-qualified signature of the containing method."
+    ],
+    old_var_name: Annotated[
+        str, "The current name (e.g., 'v0', 'p1') of the variable."
+    ],
+    new_var_name: Annotated[str, "The new descriptive name for the variable."],
 ):
     """
-    Rename one or more local variables or parameters defined in the decompiled pseudo-code of a method.
-    The method must have been decompiled first.
+    Rename local variables or parameters within a decompiled method's pseudo-code.
+    Note: The method must be decompiled (accessible via get_decompiled_code) first.
     """
     return make_jsonrpc_request(
         "rename_pseudo_code_variables",
@@ -370,53 +170,102 @@ def rename_pseudo_code_variables(
 
 
 @mcp.tool()
-def list_dex_strings(filepath: Annotated[str, "full apk file path"]) -> list[str]:
-    """
-    Retrieve the list of strings defined in the dex constants pools.
-    """
+def list_dex_strings(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+) -> list[str]:
+    """Retrieve all strings from the DEX constant pools. Useful for searching hardcoded keys or URLs."""
     return make_jsonrpc_request("list_dex_strings", filepath)
 
 
 @mcp.tool()
-def get_all_classes(filepath: Annotated[str, "full apk file path"]) -> list[str]:
-    """
-    List all classes in the project (from the Dex unit).
-    """
+def get_all_classes(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+) -> list[str]:
+    """List all class signatures in the APK (from the main DEX unit)."""
     return make_jsonrpc_request("get_all_classes", filepath)
 
 
 @mcp.tool()
-def get_all_resource_file_names(
-    filepath: Annotated[str, "full apk file path"],
+def get_apk_all_files(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    category: Annotated[str, "Type of files: 'resource' or 'asset'."],
 ) -> list[str]:
-    """
-    Retrieve all resource files names that exists in application.
-    """
-    return make_jsonrpc_request("get_all_resource_file_names", filepath)
+    """Retrieve all file names for a given category (resource or asset) present in the APK."""
+    return make_jsonrpc_request("get_apk_all_files", filepath, category)
 
 
 @mcp.tool()
-def get_apk_resource_by_path(
-    filepath: Annotated[str, "full apk file path."],
-    resource_path: Annotated[
-        str, "fully-qualified name of the resource file, e.g. 'values-v30/strings.xml'"
+def get_apk_file_content(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    file_path: Annotated[
+        str,
+        "The path to the file, e.g., 'res/values/strings.xml' or 'assets/config.json'",
     ],
+    category: Annotated[str, "Type of file: 'resource' or 'asset'."],
 ) -> str:
-    """Retrieve the contents of an APK structured resource file using its fully-qualified name, examples: ‘values-v30/strings.xml’, or ‘layout/foo.txt’"""
-    return make_jsonrpc_request("get_apk_resource_by_path", filepath, resource_path)
+    """
+    Retrieve the text content of a resource or asset file given its path.
+    Supports obfuscated paths via a powerful fallback locator.
+    """
+    return make_jsonrpc_request("get_apk_file_content", filepath, file_path, category)
 
 
 @mcp.tool()
 def add_comment(
-    filepath: Annotated[str, "full apk file path"],
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
     address: Annotated[
-        str,
-        "the address or signature to add comment to, e.g. Lcom/abc/Foo;->bar()V or 0x1234",
+        str, "The address or signature where the comment should be added."
     ],
-    comment: Annotated[str, "the comment text to add"],
+    comment: Annotated[str, "The comment text to add."],
 ):
     """
-    Add a comment to function, class, field or any address in a code unit.
-    The address can be a signature (e.g., Lcom/abc/Foo;->bar()V) or a virtual address.
+    Add a comment to a class, method, field, or specific instruction address.
+    Visible in both Smali and Java views. Supports Unicode characters.
     """
     return make_jsonrpc_request("add_comment", filepath, address, comment)
+
+
+@mcp.tool()
+def search_in_project(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    query: Annotated[str, "The search term or regular expression."],
+    search_type: Annotated[str, "Type of search: 'string' or 'identifier'."] = "string",
+) -> list[dict]:
+    """
+    Search for strings or identifiers (classes/methods) in the project.
+    Useful for finding hardcoded domains, secrets, or specific obfuscated names.
+    search_type can be 'string' (default), 'identifier', 'resource', 'asset', or 'native'.
+    - 'string': search DEX string pool for matching values.
+    - 'identifier': search class/method signatures.
+    - 'resource': search resource file paths and text content (xml, json, etc).
+    - 'asset': search asset file paths and text content.
+    """
+    return make_jsonrpc_request("search_in_project", filepath, query, search_type)
+
+
+@mcp.tool()
+def perform_security_scan(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+) -> list[dict]:
+    """
+    Performs a comprehensive security scan on the APK, covering three areas:
+    1. Packer Detection: Identifies known packers/protectors (e.g., Qihoo360, Bangcle, Ijiami) via file signature matching (rules from 'apkpackdata.json').
+    2. SDK Identification: Detects embedded third-party SDKs by matching native library names (rules from 'sdk.json').
+    3. Sensitive String/API Scan: Searches the DEX string pool, method and class signatures for sensitive patterns like hardcoded keys, URLs, crypto APIs, etc. (rules from 'sensitive_strings.txt').
+    Returns a flat list of dicts, each with 'type' ('Packer', 'SDK', or 'Sensitive String'), 'name', and 'detail'.
+    """
+    return make_jsonrpc_request("perform_security_scan", filepath)
+
+
+@mcp.tool()
+def export_all_resources(
+    filepath: Annotated[str, "The absolute filesystem path to the APK file. If the APK is already open in JEB, you can pass an empty string \"\"."],
+    output_dir: Annotated[
+        str, "The absolute path to the local directory where resources will be saved."
+    ],
+) -> dict:
+    """
+    Export all accessible resources and assets to a local directory structure.
+    Enables deep analysis with external grep or auditing tools.
+    """
+    return make_jsonrpc_request("export_all_resources", filepath, output_dir)
